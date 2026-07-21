@@ -3,15 +3,106 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
   body {
-    @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-200;
+    @apply bg-ivory-200 text-navy-900 dark:bg-navy-950 dark:text-ivory-100 transition-colors duration-300 selection:bg-gold-500 selection:text-white;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }
 
 html[dir='rtl'] {
-  font-family: 'Cairo', sans-serif;
+  font-family: 'IBM Plex Sans Arabic', 'Tajawal', sans-serif;
 }
 
 html[dir='ltr'] {
   font-family: 'Inter', sans-serif;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-ivory-400 dark:bg-navy-700 rounded-full;
+  transition: background-color 0.2s ease;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gold-500;
+}
+
+/* Premium Glass & Surface Utilities */
+.surface-card {
+  @apply bg-white dark:bg-navy-900/90 border border-ivory-300/80 dark:border-navy-800 shadow-card dark:shadow-card-dark rounded-2xl transition-all duration-200;
+}
+
+.surface-card-hover {
+  @apply hover:-translate-y-0.5 hover:shadow-card-md hover:border-gold-500/40 dark:hover:border-gold-500/40 transition-all duration-300;
+}
+
+/* Shimmer Loading Effect */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.6) 50%,
+    rgba(255,255,255,0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+.dark .shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.05) 50%,
+    rgba(255,255,255,0) 100%
+  );
+  background-size: 200% 100%;
+}
+
+/* Sticky Table Headers */
+.sticky-thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Primary Button Utilities */
+.btn-gold {
+  @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold text-white rounded-xl shadow-gold bg-gold-gradient hover:shadow-gold-lg hover:brightness-105 active:scale-[0.99] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.btn-outline {
+  @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl border border-ivory-400 dark:border-navy-700 text-navy-800 dark:text-ivory-200 bg-white dark:bg-navy-800 hover:bg-ivory-100 dark:hover:bg-navy-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+/* Drop Zone */
+.drop-zone {
+  @apply border-2 border-dashed border-ivory-400 dark:border-navy-700 rounded-2xl p-10 flex flex-col items-center justify-center gap-4 transition-all duration-200 cursor-pointer;
+}
+.drop-zone-active {
+  @apply border-gold-500 bg-gold-50 dark:bg-gold-900/20;
+}
+
+/* Data Table */
+.data-table {
+  @apply w-full text-left rtl:text-right text-sm;
+}
+.data-table thead {
+  @apply bg-ivory-100 dark:bg-navy-800/80 text-navy-700 dark:text-navy-200 font-bold uppercase tracking-wider text-xs border-b border-ivory-300 dark:border-navy-700;
+}
+.data-table thead th {
+  @apply px-5 py-3.5 whitespace-nowrap;
+}
+.data-table tbody tr {
+  @apply border-b border-ivory-200/80 dark:border-navy-800/80 hover:bg-ivory-50 dark:hover:bg-navy-800/40 transition-colors duration-150;
+}
+.data-table tbody td {
+  @apply px-5 py-3.5;
 }

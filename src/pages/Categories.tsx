@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Folder, MonitorSmartphone } from 'lucide-react';
+import { Folder, MonitorSmartphone, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
 import { useDevices } from '../hooks/useDevices';
 
 export default function Categories() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { devices, loading, error } = useDevices();
 
   const categories = useMemo(() => {
@@ -19,46 +19,63 @@ export default function Categories() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [devices]);
 
+  const ArrowIcon = i18n.language === 'ar' ? ArrowLeft : ArrowRight;
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('categories')}</h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('categories_description')}</p>
+      <div className="pb-4 border-b border-ivory-300 dark:border-navy-800">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-navy-900 dark:text-white">
+          {t('categories')}
+        </h1>
+        <p className="mt-1 text-sm font-semibold text-navy-500 dark:text-navy-400">
+          {t('categories_description')}
+        </p>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm dark:bg-gray-800 dark:border-gray-700 overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center text-gray-500 dark:text-gray-400">{t('loading')}</div>
-        ) : error ? (
-          <div className="p-8 text-center text-red-600 dark:text-red-400">{error.message}</div>
-        ) : categories.length === 0 ? (
-          <div className="p-8 text-center text-gray-500 dark:text-gray-400">{t('no_data')}</div>
-        ) : (
-          <div className="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-3">
-            {categories.map((category) => (
-              <Link
-                key={category.name}
-                to={`/devices?category=${encodeURIComponent(category.name)}`}
-                className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 p-4 transition-all hover:-translate-y-0.5 hover:border-primary-300 hover:shadow-sm dark:border-gray-700 dark:hover:border-primary-700"
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="rounded-lg bg-primary-50 p-3 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300">
-                    <Folder className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-gray-900 dark:text-white">{category.name}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('view_devices')}</p>
-                  </div>
+      {loading ? (
+        <div className="flex flex-col items-center justify-center min-h-[40vh] space-y-3">
+          <Loader2 className="w-8 h-8 animate-spin text-gold-500" />
+          <span className="text-sm font-medium text-navy-400">{t('loading')}</span>
+        </div>
+      ) : error ? (
+        <div className="surface-card p-6 rounded-2xl border-rose-200 bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400">
+          {error.message}
+        </div>
+      ) : categories.length === 0 ? (
+        <div className="surface-card p-12 rounded-2xl text-center text-navy-400 font-semibold">
+          {t('no_data')}
+        </div>
+      ) : (
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {categories.map((category) => (
+            <Link
+              key={category.name}
+              to={`/devices?category=${encodeURIComponent(category.name)}`}
+              className="surface-card surface-card-hover p-6 rounded-2xl flex items-center justify-between gap-4 group"
+            >
+              <div className="flex min-w-0 items-center gap-4">
+                <div className="rounded-2xl bg-gold-gradient p-3.5 text-white shadow-gold shrink-0 group-hover:scale-105 transition-transform duration-300">
+                  <Folder className="h-6 w-6" />
                 </div>
-                <div className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-200">
-                  <MonitorSmartphone className="h-4 w-4" />
-                  {category.count}
+                <div className="min-w-0">
+                  <p className="truncate font-extrabold text-navy-900 dark:text-white text-base group-hover:text-gold-600 dark:group-hover:text-gold-400 transition-colors">
+                    {category.name}
+                  </p>
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-navy-400 mt-1">
+                    <span>{t('view_devices')}</span>
+                    <ArrowIcon className="w-3.5 h-3.5 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform" />
+                  </span>
                 </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 rounded-full bg-ivory-100 dark:bg-navy-800 border border-ivory-300 dark:border-navy-700 px-3.5 py-1.5 text-xs font-extrabold text-navy-900 dark:text-gold-400 shrink-0">
+                <MonitorSmartphone className="h-3.5 w-3.5 text-gold-500" />
+                <span>{category.count}</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
