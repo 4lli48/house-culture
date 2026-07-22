@@ -59,7 +59,7 @@ export default {
       },
       fontFamily: {
         arabic: ['"IBM Plex Sans Arabic"', 'sans-serif'],
-        sans:   ['Inter', '"IBM Plex Sans Arabic"', 'sans-serif'],
+        sans:   ['"IBM Plex Sans"', '"IBM Plex Sans Arabic"', 'Inter', 'sans-serif'],
       },
       boxShadow: {
         'card':      '0 1px 3px 0 rgba(0,0,0,0.04), 0 4px 16px -2px rgba(0,0,0,0.06)',

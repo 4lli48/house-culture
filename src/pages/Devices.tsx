@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Edit, Eye, Filter, Plus, Search, Trash2, X, Tag,
   Upload, ChevronUp, ChevronDown, ChevronsUpDown,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, Loader2, RefreshCw,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useDevices, type Device } from '../hooks/useDevices';
@@ -18,7 +18,7 @@ import ImportDevicesModal from '../components/ImportDevicesModal';
 type SortKey = 'inventory_code' | 'name' | 'category' | 'status' | 'location' | 'updated_at';
 type SortDir = 'asc' | 'desc';
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 20;
 
 function SortIcon({ col, sortKey, sortDir }: { col: SortKey; sortKey: SortKey; sortDir: SortDir }) {
   if (col !== sortKey) return <ChevronsUpDown className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600" />;
@@ -37,9 +37,11 @@ export default function Devices() {
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [page, setPage] = useState(1);
   const [showImport, setShowImport] = useState(false);
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
 
   const selectedStatus = searchParams.get('status') || '';
   const selectedCategory = searchParams.get('category') || '';
+  const selectedLocation = searchParams.get('location') || '';
 
   useEffect(() => {
     setSearchTerm(searchParams.get('search') || '');
@@ -55,8 +57,6 @@ export default function Devices() {
   const locations = useMemo(() => {
     return Array.from(new Set(devices.map((d) => d.location).filter(Boolean) as string[])).sort();
   }, [devices]);
-
-  const selectedLocation = searchParams.get('location') || '';
 
   const updateFilter = (key: string, value: string) => {
     const next = new URLSearchParams(searchParams);
@@ -82,13 +82,48 @@ export default function Devices() {
     setPage(1);
   };
 
+  const handleStatusChange = async (device: Device, newStatus: Device['status']) => {
+    if (device.status === newStatus) return;
+    setUpdatingStatusId(device.id);
+
+    try {
+      const { error } = await supabase
+        .from('devices')
+        .update({ status: newStatus })
+        .eq('id', device.id);
+
+      if (error) throw error;
+
+      // Log activity
+      await logActivity({
+        userId: user?.id ?? null,
+        action: 'status_changed',
+        entityType: 'device',
+        entityId: device.id,
+        details: {
+          name: device.name,
+          inventory_code: device.inventory_code,
+          old_status: device.status,
+          new_status: newStatus,
+        },
+      });
+
+      toast.success(t('success'));
+      await refetch();
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setUpdatingStatusId(null);
+    }
+  };
+
   const handleDelete = async (device: Device) => {
     if (!window.confirm(t('confirm_delete'))) return;
     try {
       const { error } = await supabase.from('devices').delete().eq('id', device.id);
       if (error) throw error;
       toast.success(t('success'));
-      // Log activity
+
       await logActivity({
         userId: user?.id ?? null,
         action: 'device_deleted',
@@ -134,32 +169,42 @@ export default function Devices() {
   const hasFilters = Boolean(searchTerm || selectedStatus || selectedCategory || selectedLocation);
 
   const thClass = (col: SortKey) =>
-    `px-5 py-3.5 text-left rtl:text-right whitespace-nowrap font-semibold cursor-pointer select-none group transition-colors hover:text-gold-600 dark:hover:text-gold-400 ${sortKey === col ? 'text-gold-600 dark:text-gold-400' : ''}`;
+    `px-5 py-4 text-left rtl:text-right whitespace-nowrap font-bold text-xs uppercase tracking-wider cursor-pointer select-none group transition-colors hover:text-gold-600 dark:hover:text-gold-400 ${sortKey === col ? 'text-gold-600 dark:text-gold-400' : 'text-slate-600 dark:text-slate-300'}`;
 
   return (
-    <div className="space-y-5 animate-fade-in-up">
-      {/* Header */}
-      <div className="section-header">
+    <div className="space-y-6 animate-fade-in-up">
+      {/* Header Banner */}
+      <div className="surface-card p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-navy-900 dark:text-white">
             {t('devices')}
           </h1>
-          <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-            سجل وتفاصيل أجهزة ومعدات بيت الثقافة
+          <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">
+            سجل وحوكمة الأجهزة الرقمية والمعدات ببيت الثقافة بحائل
           </p>
         </div>
-        <div className="flex items-center gap-2.5 flex-wrap">
+        
+        {/* Action buttons: Add Device and Import */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="p-2.5 rounded-2xl border border-slate-200 dark:border-navy-700 bg-white dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:border-gold-500/50 transition-all duration-200 shadow-xs"
+            title="تحديث البيانات"
+          >
+            <RefreshCw className="w-4.5 h-4.5" />
+          </button>
           <button
             type="button"
             onClick={() => setShowImport(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold rounded-xl border border-gold-500/30 bg-gold-500/8 text-gold-700 dark:text-gold-400 hover:bg-gold-500/15 hover:border-gold-500/50 transition-all duration-200"
+            className="inline-flex items-center gap-2 px-4 py-3 text-xs font-extrabold rounded-2xl border border-gold-500/30 bg-gold-500/10 text-gold-700 dark:text-gold-400 hover:bg-gold-500/20 hover:border-gold-500/50 transition-all duration-200"
           >
             <Upload className="w-4 h-4" />
-            <span className="hidden sm:inline">{t('import_devices')}</span>
+            <span>{t('import_devices')}</span>
           </button>
           <Link
             to="/devices/new"
-            className="btn-gold"
+            className="btn-gold px-5 py-3 text-xs gap-2 rounded-2xl"
           >
             <Plus className="w-4 h-4" />
             <span>{t('add_device')}</span>
@@ -167,8 +212,8 @@ export default function Devices() {
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="glass-card p-4 rounded-2xl flex flex-col gap-3 xl:flex-row">
+      {/* Filter Toolbar */}
+      <div className="surface-card p-4 rounded-3xl flex flex-col gap-3 xl:flex-row">
         {/* Search */}
         <div className="relative flex-1">
           <Search className="absolute left-3.5 rtl:left-auto rtl:right-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400 dark:text-slate-500" />
@@ -180,7 +225,7 @@ export default function Devices() {
               setSearchTerm(e.target.value);
               updateFilter('search', e.target.value);
             }}
-            className="w-full pl-10 rtl:pl-4 rtl:pr-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white/80 dark:bg-navy-800/80 dark:border-navy-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-gold-500/20 focus:border-gold-500 text-sm transition-all duration-200"
+            className="w-full pl-10 rtl:pl-4 rtl:pr-10 pr-4 py-3 rounded-2xl border border-slate-200/80 bg-white dark:bg-navy-800 dark:border-navy-700 text-navy-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-gold-500/20 focus:border-gold-500 text-xs font-semibold transition-all duration-200"
           />
         </div>
 
@@ -189,7 +234,7 @@ export default function Devices() {
           <select
             value={selectedStatus}
             onChange={(e) => updateFilter('status', e.target.value)}
-            className="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white/80 dark:bg-navy-800/80 dark:border-navy-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-gold-500/20 focus:border-gold-500 text-sm font-medium transition-all duration-200"
+            className="px-4 py-3 rounded-2xl border border-slate-200/80 bg-white dark:bg-navy-800 dark:border-navy-700 text-navy-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-gold-500/20 focus:border-gold-500 text-xs font-bold transition-all duration-200"
           >
             <option value="">{t('all_statuses')}</option>
             {DEVICE_STATUSES.map((s) => (
@@ -201,7 +246,7 @@ export default function Devices() {
           <select
             value={selectedCategory}
             onChange={(e) => updateFilter('category', e.target.value)}
-            className="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white/80 dark:bg-navy-800/80 dark:border-navy-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-gold-500/20 focus:border-gold-500 text-sm font-medium transition-all duration-200"
+            className="px-4 py-3 rounded-2xl border border-slate-200/80 bg-white dark:bg-navy-800 dark:border-navy-700 text-navy-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-gold-500/20 focus:border-gold-500 text-xs font-bold transition-all duration-200"
           >
             <option value="">{t('all_categories')}</option>
             {categories.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -212,7 +257,7 @@ export default function Devices() {
             <select
               value={selectedLocation}
               onChange={(e) => updateFilter('location', e.target.value)}
-              className="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white/80 dark:bg-navy-800/80 dark:border-navy-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-gold-500/20 focus:border-gold-500 text-sm font-medium transition-all duration-200"
+              className="px-4 py-3 rounded-2xl border border-slate-200/80 bg-white dark:bg-navy-800 dark:border-navy-700 text-navy-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-gold-500/20 focus:border-gold-500 text-xs font-bold transition-all duration-200"
             >
               <option value="">{t('all_locations')}</option>
               {locations.map((l) => <option key={l} value={l}>{l}</option>)}
@@ -224,7 +269,7 @@ export default function Devices() {
             type="button"
             onClick={clearFilters}
             disabled={!hasFilters}
-            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white dark:bg-navy-800 dark:border-navy-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-navy-700 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-semibold transition-all duration-200"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-2xl border border-slate-200/80 bg-white dark:bg-navy-800 dark:border-navy-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-navy-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-extrabold transition-all duration-200"
           >
             <X className="w-4 h-4" />
             <span>{t('clear_filters')}</span>
@@ -234,8 +279,8 @@ export default function Devices() {
 
       {/* Active Filter Chips */}
       {hasFilters && (
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="inline-flex items-center gap-1.5 font-semibold text-gold-600 dark:text-gold-400 text-xs">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
+          <span className="inline-flex items-center gap-1.5 text-gold-600 dark:text-gold-400">
             <Filter className="h-3.5 w-3.5" />
             {t('active_filters')}:
           </span>
@@ -245,21 +290,21 @@ export default function Devices() {
             selectedCategory && { label: `${t('category')}: ${selectedCategory}` },
             selectedLocation && { label: `${t('location')}: ${selectedLocation}` },
           ].filter(Boolean).map((chip, i) => (
-            <span key={i} className="inline-flex items-center gap-1 rounded-full bg-gold-50 dark:bg-gold-950/40 border border-gold-200 dark:border-gold-800 px-3 py-1 text-xs font-bold text-gold-800 dark:text-gold-300">
+            <span key={i} className="inline-flex items-center gap-1 rounded-full bg-gold-50 dark:bg-gold-950/40 border border-gold-300 dark:border-gold-800 px-3 py-1 text-gold-800 dark:text-gold-300">
               {(chip as { label: string }).label}
             </span>
           ))}
-          <span className="text-xs font-medium text-slate-400">
-            ({filteredDevices.length} / {devices.length})
+          <span className="text-slate-400 font-semibold">
+            ({filteredDevices.length} من {devices.length})
           </span>
         </div>
       )}
 
-      {/* Table Card */}
-      <div className="glass-card rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="data-table">
-            <thead>
+      {/* Table Container */}
+      <div className="surface-card rounded-3xl overflow-hidden shadow-card">
+        <div className="overflow-x-auto max-h-[650px] relative">
+          <table className="data-table w-full">
+            <thead className="sticky top-0 z-10 bg-ivory-100 dark:bg-navy-800 shadow-xs">
               <tr>
                 <th className={thClass('inventory_code')} onClick={() => handleSort('inventory_code')}>
                   <span className="inline-flex items-center gap-1.5">
@@ -286,25 +331,26 @@ export default function Devices() {
                     {t('status')} <SortIcon col="status" sortKey={sortKey} sortDir={sortDir} />
                   </span>
                 </th>
-                <th className="px-5 py-3.5 text-left rtl:text-right whitespace-nowrap font-semibold">
+                <th className="px-5 py-4 text-left rtl:text-right whitespace-nowrap font-bold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300">
                   {t('actions')}
                 </th>
               </tr>
             </thead>
-            <tbody>
+
+            <tbody className="divide-y divide-slate-100 dark:divide-navy-800">
               {loading ? (
-                Array.from({ length: 5 }).map((_, i) => (
+                Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i}>
                     {Array.from({ length: 6 }).map((_, j) => (
                       <td key={j} className="px-5 py-4">
-                        <div className="h-4 rounded-lg bg-slate-200 dark:bg-navy-700 animate-pulse" style={{ width: `${60 + (j * 20) % 40}%` }} />
+                        <div className="h-4 rounded-lg bg-slate-200 dark:bg-navy-800 animate-pulse" style={{ width: `${60 + (j * 15) % 35}%` }} />
                       </td>
                     ))}
                   </tr>
                 ))
               ) : error ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center text-rose-600 dark:text-rose-400 font-medium">
+                  <td colSpan={6} className="px-5 py-12 text-center text-rose-600 dark:text-rose-400 font-bold">
                     {error.message}
                   </td>
                 </tr>
@@ -312,53 +358,82 @@ export default function Devices() {
                 <tr>
                   <td colSpan={6} className="px-5 py-16 text-center">
                     <div className="flex flex-col items-center gap-3 text-slate-400">
-                      <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-navy-800 flex items-center justify-center">
-                        <Search className="w-6 h-6 text-slate-300 dark:text-slate-600" />
+                      <div className="w-16 h-16 rounded-3xl bg-slate-100 dark:bg-navy-800 flex items-center justify-center">
+                        <Search className="w-8 h-8 text-slate-300 dark:text-slate-600" />
                       </div>
-                      <p className="font-semibold text-sm">{t('no_data')}</p>
+                      <p className="font-extrabold text-sm">{t('no_data')}</p>
                     </div>
                   </td>
                 </tr>
               ) : (
                 pagedDevices.map((device) => (
-                  <tr key={device.id}>
-                    <td>
-                      <span className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-navy-800 text-slate-700 dark:text-slate-300 text-xs font-mono font-semibold border border-slate-200/60 dark:border-navy-700">
+                  <tr key={device.id} className="hover:bg-slate-50/80 dark:hover:bg-navy-800/40 transition-colors">
+                    <td className="whitespace-nowrap">
+                      <span className="px-3 py-1 rounded-xl bg-slate-100 dark:bg-navy-800 text-slate-700 dark:text-slate-300 text-xs font-mono font-bold border border-slate-200/60 dark:border-navy-700">
                         {device.inventory_code}
                       </span>
                     </td>
-                    <td className="font-bold text-navy-900 dark:text-white">
-                      {device.name}
-                      {device.brand && (
-                        <span className="block text-[10px] font-medium text-slate-400 leading-tight mt-0.5">{device.brand}</span>
-                      )}
-                    </td>
                     <td>
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-700 dark:bg-navy-800 dark:text-slate-300 border border-slate-200 dark:border-navy-700">
-                        <Tag className="w-3 h-3 text-gold-500" />
+                      <div className="font-extrabold text-navy-900 dark:text-white text-sm">
+                        {device.name}
+                        {device.brand && (
+                          <span className="block text-[11px] font-semibold text-slate-400 leading-tight mt-0.5">{device.brand}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full bg-slate-100 text-slate-700 dark:bg-navy-800 dark:text-slate-300 border border-slate-200 dark:border-navy-700">
+                        <Tag className="w-3.5 h-3.5 text-gold-500 shrink-0" />
                         {device.category}
                       </span>
                     </td>
-                    <td className="text-sm text-slate-500 dark:text-slate-400">
+                    <td className="text-xs text-slate-500 dark:text-slate-400 font-semibold whitespace-nowrap">
                       {device.location || <span className="text-slate-300 dark:text-slate-600">—</span>}
                     </td>
-                    <td>
-                      <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${getStatusBadgeClass(device.status)}`}>
-                        {t(getStatusLabelKey(device.status))}
-                      </span>
+
+                    {/* CLICKABLE INTERACTIVE STATUS DROPDOWN */}
+                    <td className="whitespace-nowrap">
+                      <div className="relative inline-block">
+                        {updatingStatusId === device.id ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full bg-gold-50 text-gold-700 dark:bg-gold-950/40 dark:text-gold-300">
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            جار التحديث...
+                          </span>
+                        ) : (
+                          <select
+                            value={device.status}
+                            onChange={(e) => handleStatusChange(device, e.target.value as Device['status'])}
+                            className={`appearance-none cursor-pointer border pl-7 rtl:pl-3 rtl:pr-7 py-1.5 text-xs font-extrabold rounded-full focus:outline-none focus:ring-2 focus:ring-gold-500/40 transition-all ${getStatusBadgeClass(device.status)}`}
+                          >
+                            <option value="Working" className="bg-white text-slate-900 dark:bg-navy-900 dark:text-white">
+                              {t('working')} (يعمل)
+                            </option>
+                            <option value="Maintenance" className="bg-white text-slate-900 dark:bg-navy-900 dark:text-white">
+                              {t('maintenance')} (تحت الصيانة)
+                            </option>
+                            <option value="Broken" className="bg-white text-slate-900 dark:bg-navy-900 dark:text-white">
+                              {t('broken')} (معطل)
+                            </option>
+                            <option value="Lost" className="bg-white text-slate-900 dark:bg-navy-900 dark:text-white">
+                              {t('lost')} (مفقود)
+                            </option>
+                          </select>
+                        )}
+                      </div>
                     </td>
-                    <td>
+
+                    <td className="whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
                         <Link
                           to={`/devices/${device.id}`}
-                          className="p-1.5 text-slate-400 hover:text-gold-600 dark:hover:text-gold-400 rounded-lg hover:bg-gold-50 dark:hover:bg-gold-950/30 transition-colors"
+                          className="p-2 text-slate-400 hover:text-gold-600 dark:hover:text-gold-400 rounded-xl hover:bg-gold-50 dark:hover:bg-gold-950/30 transition-colors"
                           title={t('view')}
                         >
                           <Eye className="w-4 h-4" />
                         </Link>
                         <Link
                           to={`/devices/${device.id}/edit`}
-                          className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors"
+                          className="p-2 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors"
                           title={t('edit')}
                         >
                           <Edit className="w-4 h-4" />
@@ -366,7 +441,7 @@ export default function Devices() {
                         <button
                           type="button"
                           onClick={() => handleDelete(device)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                          className="p-2 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
                           title={t('delete')}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -380,18 +455,18 @@ export default function Devices() {
           </table>
         </div>
 
-        {/* Pagination */}
+        {/* Pagination Footer */}
         {!loading && pagedDevices.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3.5 border-t border-slate-100 dark:border-navy-800 bg-slate-50/60 dark:bg-navy-950/30">
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-slate-100 dark:border-navy-800 bg-slate-50/70 dark:bg-navy-950/40">
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
               {t('showing')} {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, sortedDevices.length)} {t('of')} {sortedDevices.length} {t('results')}
             </p>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="p-1.5 rounded-lg border border-slate-200 dark:border-navy-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-navy-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="p-2 rounded-xl border border-slate-200 dark:border-navy-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-navy-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronRight className="w-4 h-4 rtl:rotate-180" />
               </button>
@@ -402,7 +477,7 @@ export default function Devices() {
                     key={p}
                     type="button"
                     onClick={() => setPage(p)}
-                    className={`w-7 h-7 rounded-lg text-xs font-bold transition-colors ${page === p ? 'bg-gold-500 text-white shadow-gold-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-navy-800'}`}
+                    className={`w-8 h-8 rounded-xl text-xs font-extrabold transition-colors ${page === p ? 'bg-gold-gradient text-white shadow-gold-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-navy-800'}`}
                   >
                     {p}
                   </button>
@@ -412,7 +487,7 @@ export default function Devices() {
                 type="button"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="p-1.5 rounded-lg border border-slate-200 dark:border-navy-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-navy-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="p-2 rounded-xl border border-slate-200 dark:border-navy-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-navy-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronLeft className="w-4 h-4 rtl:rotate-180" />
               </button>
@@ -421,7 +496,7 @@ export default function Devices() {
         )}
       </div>
 
-      {/* Import Modal */}
+      {/* Import Devices Modal */}
       {showImport && (
         <ImportDevicesModal
           onClose={() => setShowImport(false)}

@@ -13,7 +13,7 @@ import { logActivity } from '../hooks/useActivityLog';
 function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+      <label className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-2">
         {label}
       </label>
       {children}
@@ -22,7 +22,7 @@ function FieldGroup({ label, children }: { label: string; children: React.ReactN
 }
 
 const inputClass =
-  'w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/90 dark:bg-navy-800/80 dark:border-navy-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-gold-500/20 focus:border-gold-500 text-sm transition-all duration-200';
+  'w-full px-4 py-3 rounded-2xl border border-slate-200/80 bg-white dark:bg-navy-800 dark:border-navy-700 text-navy-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-gold-500/20 focus:border-gold-500 text-xs font-bold transition-all duration-200';
 
 export default function DeviceDetails() {
   const { id } = useParams();
@@ -97,17 +97,17 @@ export default function DeviceDetails() {
     return (
       <div className="max-w-3xl mx-auto space-y-6">
         <div className="flex items-center gap-4 pb-4 border-b border-slate-200/80 dark:border-navy-800">
-          <div className="w-10 h-10 rounded-xl bg-slate-200 dark:bg-navy-800 animate-pulse" />
+          <div className="w-10 h-10 rounded-2xl bg-slate-200 dark:bg-navy-800 animate-pulse" />
           <div className="space-y-2 flex-1">
             <div className="h-7 w-48 rounded-xl bg-slate-200 dark:bg-navy-800 animate-pulse" />
             <div className="h-4 w-32 rounded-lg bg-slate-200 dark:bg-navy-800 animate-pulse" />
           </div>
         </div>
-        <div className="glass-card rounded-2xl p-8 grid grid-cols-2 gap-6">
+        <div className="surface-card rounded-3xl p-8 grid grid-cols-2 gap-6">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="space-y-2">
               <div className="h-3 w-24 rounded bg-slate-200 dark:bg-navy-800 animate-pulse" />
-              <div className="h-11 rounded-xl bg-slate-200 dark:bg-navy-800 animate-pulse" />
+              <div className="h-11 rounded-2xl bg-slate-200 dark:bg-navy-800 animate-pulse" />
             </div>
           ))}
         </div>
@@ -117,12 +117,12 @@ export default function DeviceDetails() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-fade-in-up">
-      {/* Header */}
-      <div className="flex items-center gap-3.5 pb-4 border-b border-slate-200/80 dark:border-navy-800">
+      {/* Page Header */}
+      <div className="flex items-center gap-4 pb-4 border-b border-slate-200/80 dark:border-navy-800">
         <button
           type="button"
           onClick={() => navigate('/devices')}
-          className="p-2 text-slate-500 hover:text-navy-900 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-navy-800 transition-colors shrink-0"
+          className="p-2.5 text-slate-500 hover:text-navy-900 dark:hover:text-white rounded-2xl hover:bg-slate-100 dark:hover:bg-navy-800 transition-colors shrink-0"
           aria-label={t('back_home')}
         >
           <ArrowLeft className="w-5 h-5 rtl:rotate-180" />
@@ -131,21 +131,21 @@ export default function DeviceDetails() {
           <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-navy-900 dark:text-white">
             {isNew ? t('add_device') : t('edit')}
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            {isNew ? 'إضافة جهاز جديد إلى سجل المخزون' : `تعديل: ${device.name || ''}`}
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
+            {isNew ? 'تسجيل وإدخال بيانات جهاز جديد في المخزون' : `تعديل تفاصيل: ${device.name || ''}`}
           </p>
         </div>
       </div>
 
-      {/* Form Card */}
-      <div className="glass-card rounded-2xl p-6 sm:p-8 space-y-8">
-        {/* Section: Device Info */}
+      {/* Main Form Card */}
+      <div className="surface-card rounded-3xl p-6 sm:p-8 space-y-8 shadow-card">
+        {/* Section: Basic Information */}
         <div className="space-y-5">
-          <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100 dark:border-navy-800">
-            <div className="p-2 rounded-xl bg-gold-50 dark:bg-gold-950/40 text-gold-600 dark:text-gold-400">
-              <MonitorSmartphone className="w-4.5 h-4.5" />
+          <div className="flex items-center gap-3 pb-3 border-b border-slate-100 dark:border-navy-800">
+            <div className="p-2 rounded-xl bg-gold-500/10 text-gold-600 dark:text-gold-400">
+              <MonitorSmartphone className="w-5 h-5" />
             </div>
-            <h2 className="text-sm font-bold text-navy-900 dark:text-white">{t('device_info')}</h2>
+            <h2 className="text-sm font-extrabold text-navy-900 dark:text-white">{t('device_info')}</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -208,13 +208,13 @@ export default function DeviceDetails() {
           </div>
         </div>
 
-        {/* Section: Additional Info */}
+        {/* Section: Additional & Operational Metadata */}
         <div className="space-y-5">
-          <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100 dark:border-navy-800">
-            <div className="p-2 rounded-xl bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-400">
-              <Info className="w-4.5 h-4.5" />
+          <div className="flex items-center gap-3 pb-3 border-b border-slate-100 dark:border-navy-800">
+            <div className="p-2 rounded-xl bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300">
+              <Info className="w-5 h-5" />
             </div>
-            <h2 className="text-sm font-bold text-navy-900 dark:text-white">{t('additional_info')}</h2>
+            <h2 className="text-sm font-extrabold text-navy-900 dark:text-white">{t('additional_info')}</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -269,7 +269,7 @@ export default function DeviceDetails() {
                 <textarea
                   name="notes" rows={3}
                   value={device.notes || ''} onChange={handleChange}
-                  placeholder="ملاحظات إضافية عن الجهاز..."
+                  placeholder="ملاحظات وتوجيهات خاصة عن الجهاز..."
                   className={`${inputClass} resize-none`}
                 />
               </FieldGroup>
@@ -277,12 +277,12 @@ export default function DeviceDetails() {
           </div>
         </div>
 
-        {/* Actions */}
+        {/* Action Controls */}
         <div className="flex justify-end items-center pt-4 border-t border-slate-100 dark:border-navy-800 gap-3">
           <button
             type="button"
             onClick={() => navigate('/devices')}
-            className="btn-outline"
+            className="btn-outline px-5 py-3 text-xs rounded-2xl"
           >
             {t('cancel')}
           </button>
@@ -290,7 +290,7 @@ export default function DeviceDetails() {
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="btn-gold"
+            className="btn-gold px-6 py-3 text-xs gap-2 rounded-2xl"
           >
             {saving ? (
               <><Loader2 className="w-4 h-4 animate-spin" /><span>{t('saving')}</span></>

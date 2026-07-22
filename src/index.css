@@ -13,11 +13,11 @@
 }
 
 html[dir='rtl'] {
-  font-family: 'IBM Plex Sans Arabic', 'Tajawal', sans-serif;
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
 }
 
 html[dir='ltr'] {
-  font-family: 'Inter', sans-serif;
+  font-family: 'IBM Plex Sans', 'Inter', sans-serif;
 }
 
 /* Custom Scrollbar */
