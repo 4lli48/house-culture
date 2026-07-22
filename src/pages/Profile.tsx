@@ -5,7 +5,7 @@ import { Mail, Shield, Save, Loader2, User, Sliders, Moon, Sun, Globe, Info, Key
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
 import { supabase } from '../lib/supabase';
-import { getErrorMessage, cn } from '../lib/utils';
+import { getErrorMessage, cn, getUserRole, getUserRoleLabel } from '../lib/utils';
 import { toast } from 'react-toastify';
 
 export default function Profile() {
@@ -171,9 +171,14 @@ export default function Profile() {
                   {fullName || user?.email?.split('@')[0]}
                 </h2>
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-500/10 text-gold-700 dark:text-gold-400 text-xs font-extrabold border border-gold-500/20">
+                  <span className={cn(
+                    'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold border',
+                    getUserRole(user?.email) === 'admin'
+                      ? 'bg-gold-500/10 text-gold-700 dark:text-gold-400 border-gold-500/20'
+                      : 'bg-slate-100 dark:bg-navy-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-navy-700'
+                  )}>
                     <Shield className="w-3.5 h-3.5 text-gold-500" />
-                    {t('admin')}
+                    {getUserRoleLabel(user?.email)}
                   </span>
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-navy-800 text-navy-700 dark:text-navy-200 text-xs font-bold border border-slate-200 dark:border-navy-700">
                     <Mail className="w-3.5 h-3.5 text-slate-400" />

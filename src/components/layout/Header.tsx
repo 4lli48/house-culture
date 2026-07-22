@@ -4,7 +4,7 @@ import { Globe, Menu, Moon, Settings, Sun, ChevronDown, LogOut, User } from 'luc
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../hooks/useAuth';
-import { cn } from '../../lib/utils';
+import { cn, getUserRoleLabel } from '../../lib/utils';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -131,7 +131,7 @@ export default function Header({ toggleSidebar }: HeaderProps) {
                 {userName}
               </span>
               <span className="text-[10px] text-gold-600 dark:text-gold-400 font-bold leading-tight mt-0.5">
-                {t('admin')}
+                {getUserRoleLabel(user?.email)}
               </span>
             </div>
             <ChevronDown className={cn('w-4 h-4 text-slate-400 transition-transform duration-200', profileOpen && 'rotate-180')} />

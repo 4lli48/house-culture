@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Mail, Shield, Loader2, Activity, Users as UsersIcon, RefreshCw, Filter, Plus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { getErrorMessage, cn } from '../lib/utils';
+import { getErrorMessage, cn, getUserRole, getUserRoleLabel } from '../lib/utils';
 import { useActivityLog } from '../hooks/useActivityLog';
 import AddLogModal from '../components/AddLogModal';
 
@@ -182,12 +182,12 @@ export default function Users() {
                       <td className="px-6 py-4">
                         <span className={cn(
                           'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-extrabold border',
-                          profile.email === 'abdulilahsalh@gmail.com'
+                          getUserRole(profile.email) === 'admin'
                             ? 'bg-gold-50 text-gold-800 border-gold-300 dark:bg-gold-950/50 dark:text-gold-300 dark:border-gold-800'
                             : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-navy-800 dark:text-slate-300 dark:border-navy-700'
                         )}>
                           <Shield className="h-3.5 w-3.5" />
-                          {profile.email === 'abdulilahsalh@gmail.com' ? 'مدير' : 'موظف'}
+                          {getUserRoleLabel(profile.email)}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-slate-500 dark:text-slate-400 font-mono text-xs font-semibold">
